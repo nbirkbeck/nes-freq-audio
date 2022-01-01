@@ -3,8 +3,10 @@ extern int num_audio_signal;
 extern int num_audio_wait;
 extern unsigned short square1_signal[];
 extern unsigned short square2_signal[];
+extern unsigned short triangle_signal[];
 extern char square1_vol[];
 extern char square2_vol[];
+extern char triangle_vol[];
 extern char noise_vol[];
 
 void waitvsync();
@@ -34,18 +36,14 @@ void update_noise_wave_audio(char* ptr, int i, char* vol) {
 int main() {
   int i = 0;
   int j = 0;
-  char* ptr1 = 0x4000;
-  char* ptr2 = 0x4004;
-  char* ptr3 = 0x4008;
-  char* ptr4 = 0x400C;
-  char text[2] = {0, 0};
+  char* ptr = 0x4000;
 
-  ptr1[1] = 0x7F;  // Lower 7 bits
-  ptr2[1] = 0x7F;  // Lower 7 bits
-  ptr3[1] = 0x7F;
+  ptr[1 + 0x0] = 0x7F;  // Lower 7 bits
+  ptr[1 + 0x4] = 0x7F;  // Lower 7 bits
+  ptr[1 + 0x8] = 0x7F;
 
   // Enable all output channels 
-  ptr1[0x15] = 0x0 | 0x4 | 0x8;
+  ptr[0x15] = 0x3 | 0x4 | 0x8;
         
   while (1) {
     waitvsync();
@@ -53,10 +51,10 @@ int main() {
     j++;
     if (j == num_audio_wait) {
 
-      update_square_wave_audio(ptr1, i, square1_signal, square1_vol);
-      update_square_wave_audio(ptr2, i, square2_signal, square2_vol);
-      update_square_wave_audio(ptr3, i, square2_signal, square2_vol);
-      update_noise_wave_audio(ptr4, i, noise_vol);
+      update_square_wave_audio(ptr, i, square1_signal, square1_vol);
+      update_square_wave_audio(ptr + 0x4, i, square2_signal, square2_vol);
+      update_square_wave_audio(ptr + 0x8, i, triangle_signal, triangle_vol);
+      update_noise_wave_audio(ptr + 0xC, i, noise_vol);
       /*
       if (0 && i <= 0x7FF) {
 
