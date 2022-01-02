@@ -10,6 +10,8 @@ extern char triangle_vol[];
 extern char noise_vol[];
 
 void waitvsync();
+void cputcxy (unsigned char x, unsigned char y, char c);
+void clrscr();
 
 void update_square_wave_audio(char* ptr, int i, unsigned short* audio_signal, char* vol) {
   short sig = 0;
@@ -36,15 +38,38 @@ void update_noise_wave_audio(char* ptr, int i, char* vol) {
 int main() {
   int i = 0;
   int j = 0;
+  int k = 0;
   char* ptr = 0x4000;
+  int lasti = 0;
+  clrscr();
 
+  
   ptr[1 + 0x0] = 0x7F;  // Lower 7 bits
   ptr[1 + 0x4] = 0x7F;  // Lower 7 bits
   ptr[1 + 0x8] = 0x7F;
-
+  
   // Enable all output channels 
   ptr[0x15] = 0x3 | 0x4 | 0x8;
-        
+
+
+  cputcxy(7, 21, 'S');
+  cputcxy(7, 22, 'Q');
+  cputcxy(7, 23, '1');
+
+  cputcxy(12, 21, 'S');
+  cputcxy(12, 22, 'Q');
+  cputcxy(12, 23, '2');
+
+  cputcxy(17, 21, 'T');
+  cputcxy(17, 22, 'R');
+  cputcxy(17, 23, 'I');
+
+  cputcxy(22, 21, 'N');
+  cputcxy(22, 22, 'O');
+  cputcxy(22, 23, 'I');
+  cputcxy(22, 24, 'S');
+  cputcxy(22, 25, 'E');
+
   while (1) {
     waitvsync();
 
@@ -55,6 +80,30 @@ int main() {
       update_square_wave_audio(ptr + 0x4, i, square2_signal, square2_vol);
       update_square_wave_audio(ptr + 0x8, i, triangle_signal, triangle_vol);
       update_noise_wave_audio(ptr + 0xC, i, noise_vol);
+
+      if (i % 2 == 0) {
+      cputcxy(7, 18 - ((square1_signal[lasti] >> 7) & 0xF), 0);
+      cputcxy(7, 18 - ((square1_signal[i] >> 7) & 0xF), 2);
+
+      cputcxy(12, 18 - ((square2_signal[lasti] >> 7) & 0xF), 0);
+      cputcxy(12, 18 - ((square2_signal[i] >> 7) & 0xF), 2);
+
+      cputcxy(17, 18 - ((triangle_signal[lasti] >> 7) & 0xF), 0);
+      cputcxy(17, 18 - ((triangle_signal[i] >> 7) & 0xF), 2);
+
+      cputcxy(7, 19, ((square1_vol[i] >> 1) & 0xF) + '0');
+      cputcxy(12, 19, ((square2_vol[i] >> 1) & 0xF) + '0');
+      cputcxy(17, 19, ((triangle_vol[i] >> 1) & 0xF) + '0');
+      cputcxy(22, 19, ((noise_vol[i] >> 1) & 0xF) + '0');
+      
+      for (k = 16; k < 16; ++k) {
+        cputcxy(5, 18 - k, square1_vol[i] >= k);
+        cputcxy(10, 18 - k, square2_vol[i] >= k);
+        cputcxy(15, 18 - k, triangle_vol[i] >= k);
+        cputcxy(20, 18 - k, noise_vol[i] >= k);
+      }
+      lasti = i;
+      }      
       /*
       if (0 && i <= 0x7FF) {
 
@@ -72,6 +121,7 @@ int main() {
           ptr[0x15] = 0x1;
           }*/
       j = 0;
+
       ++i;
       if (i >= num_audio_signal) {
         i = 0;

@@ -1,9 +1,13 @@
-function [f]=save_wave(output_filename, sel, vol, ns, bs)
-
-len = 800;
+function [f]=save_wave(output_filename, sel, vol, ns, bs, len)
+if nargin < 6
+  len = 800;
+end
+if len > length(ns),
+  len = length(ns);
+end
 f = fopen(output_filename, 'w');
 num_wait = 3 * (bs / 2048);
-fprintf(f, "int num_audio_wait = %d;\n", num_wait);
+fprintf(f, "int num_audio_wait = %d;\n", floor(num_wait));
 fprintf(f, "int num_audio_signal = %d;\n", len);
 
 for chan=1:3,
@@ -24,7 +28,7 @@ for chan=1:3,
   fprintf(f, "};\n");
 end
 
-n_sort = sort(ns(1:1024));
+n_sort = sort(ns(1:len));
 max_noise = n_sort(floor(0.75 * length(n_sort)))
 
 ns_tx = ((ns .* (ns > 0.8 * max_noise)) / max_noise).^2;
