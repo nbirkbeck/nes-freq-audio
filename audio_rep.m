@@ -6,7 +6,8 @@ if nargin < 3
   noise_strength = 1;
 end
 if nargin < 4,
-  other_args = struct('low_freq', 20, 'high_freq', 2000);
+  other_args = struct('low_freq', 20, 'high_freq', 2000, 'triangle_first', 1, ...
+                     'attenuate_sigma', 0.035, 'clear_all_freq', 1);
 end
 
 output = zeros(size(signal));
@@ -39,17 +40,18 @@ basis2 = [mod(basis2, 16) < 2,
 
 basis2 = make_basis(basis2, repmat(16 / 1790000 * [1:2048]', [4, 1]), low_freq, high_freq, win, bs);
 
-% Check for triangle wave first
-bases = {basis1, basis2};
-num_keep = [1, 2];
-permute = [1, 2, 3];
-vol_scale = [1.414, 1];
-
+if other_args.triangle_first,
+  bases = {basis1, basis2};
+  num_keep = [1, 2];
+  permute = [1, 2, 3];
+  vol_scale = [1.414, 1];
+else
 % Process square waves first (permute outputs for consistency at caller).
-bases = {basis2, basis1};
-num_keep = [2, 1];
-permute = [3, 1, 2];
-vol_scale = [1, 1.414];
+  bases = {basis2, basis1};
+  num_keep = [2, 1];
+  permute = [3, 1, 2];
+  vol_scale = [1, 1.414];
+end
 
 score = zeros(size(bases{1}.basis, 1), num_blocks);
 noise = zeros(1, num_blocks);
@@ -72,13 +74,17 @@ for chan=1:size(signal, 2)
     num_selected = 1;
     chosen_freq = [];
     for basis_i=1:length(bases),
-%      chosen_freq = [];
+      % Don't clear frequencies between the different bases (allows some harmonization between channels)
+      if ~other_args.clear_all_freq,
+        chosen_freq = [];
+      end
       A = bases{basis_i}.basis_a * abs(blocks(:, bi));
       peaks = find_peaks(abs(A));
       basis = bases{basis_i}.basis;
       if length(peaks) > 0,
         for pi=1:min(num_keep(basis_i), length(peaks)),
-          A = attenuate_freq(A, bases{basis_i}.actual_freq(bases{basis_i}.freq_index), chosen_freq);
+          A = attenuate_freq(A, bases{basis_i}.actual_freq(bases{basis_i}.freq_index), chosen_freq,
+                            other_args.attenuate_sigma);
           peaks = find_peaks(abs(A));
           if length(peaks),
             A_p = abs(basis(peaks(1), :) * blocks(:, bi));
@@ -150,11 +156,11 @@ function win = window(bs)
   win = cos(pi * [0:(bs-1)]/bs - pi/2);
   return
 
-function A = attenuate_freq(A, actual_freq, chosen_freq)
+function A = attenuate_freq(A, actual_freq, chosen_freq, sigma)
   A_pre = A;
   for c=1:length(chosen_freq),
     dist = (actual_freq - chosen_freq(c)) ./ chosen_freq(c);
-    A = A.*(1.0 - exp(-(dist.^2) / (2*0.035*0.035)));
+    A = A.*(1.0 - exp(-(dist.^2) / (2*sigma*sigma)));
   end
   return
   clf;
