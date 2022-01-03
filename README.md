@@ -1,4 +1,4 @@
-# NES Audio Synthesizer
+# NES Audio Synthesizer (from WAV)
 
 Quick tickle-the-itch project on taking an input audio file and
 generating some commands for the NES audio proccessing (APU) to
@@ -65,3 +65,8 @@ allowed in the other wave types (triangle or wave).
 
 ## Examples
 
+There are a few examples (.c, and .rom) in [rom](rom) directory:
+
+* radiohead_tri1_4096: Good example of noise used as percussion.
+* californication_tri0_4096: Giving square waves higher priority.
+* hey_jude_tri0_2048: Using a smaller block size.
