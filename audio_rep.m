@@ -8,6 +8,7 @@ end
 if nargin < 4,
   other_args = struct('low_freq', 20, 'high_freq', 2000);
 end
+
 output = zeros(size(signal));
 overlap = 0;
 if overlap
@@ -25,7 +26,7 @@ mult = 1790000 / 44100;
 
 basis1 =  repmat([0:(bs-1)] * mult, [2048, 1]) ./ repmat([1:2048]', [1, bs]);
 basis1 = (mod(basis1 - 16, 32) - 2 * mod(basis1, 32) .* mod(floor((basis1 - 16) / 16), 2) - 8);
-basis1 = basis1 / 8;  % Scale from [-1, 1]
+basis1 = basis1 / 8;  % Scale the basis from [-1, 1]
 
 basis1 = make_basis(basis1, 32 / 1790000 * [1:2048]', low_freq, high_freq, win, bs);
 
@@ -38,24 +39,17 @@ basis2 = [mod(basis2, 16) < 2,
 
 basis2 = make_basis(basis2, repmat(16 / 1790000 * [1:2048]', [4, 1]), low_freq, high_freq, win, bs);
 
+% Check for triangle wave first
 bases = {basis1, basis2};
 num_keep = [1, 2];
 permute = [1, 2, 3];
-vol_scale = [1.2, 1];
+vol_scale = [1.414, 1];
 
+% Process square waves first (permute outputs for consistency at caller).
 bases = {basis2, basis1};
 num_keep = [2, 1];
 permute = [3, 1, 2];
 vol_scale = [1, 1.414];
-
-%bases = {basis2, basis1};
-%num_keep = [4, 2];
-
-if 0,
-  plot([1:bs]/bs, basis1(100, :), 'r'); hold on;
-  plot([1:bs]/bs + 0.05, basis2(100, :) + 0.05, 'b'); hold on;
-end
-
 
 score = zeros(size(bases{1}.basis, 1), num_blocks);
 noise = zeros(1, num_blocks);
@@ -64,7 +58,6 @@ n_f = norm(fft(win' .* (randn(bs, 1)*2 -1 )))
 selected = zeros(sum(num_keep), num_blocks, size(signal, 2));
 for chan=1:size(signal, 2)
   blocks = complex(zeros(bs, num_blocks));
-  blocks2 = complex(zeros(bs, num_blocks));
   bi = 1;
   I = 1:bs;
   if overlap
@@ -135,27 +128,27 @@ volume = volume(permute, :, :);
 return
 
 function cand=find_peaks(s)
-x = [-10:10]';
-g = exp(-x.^2);
-g = g / mean(g);
-s = abs(conv(s, g, 'same'));
-I = find((s(2:(end-1)) > s(1:(end-2))) .* (s(2:(end-1)) > s(3:end)));
-cand = I + 1; 
-if 0; 
-  cand = [];
-  for i=2:1:(length(s)-1),
-    if (s(i) > s(i - 1)) && (s(i) > s(i + 1))
-      cand = [cand; i];
+  x = [-10:10]';
+  g = exp(-x.^2);
+  g = g / mean(g);
+  s = abs(conv(s, g, 'same'));
+  I = find((s(2:(end-1)) > s(1:(end-2))) .* (s(2:(end-1)) > s(3:end)));
+  cand = I + 1; 
+  if 0; 
+    cand = [];
+    for i=2:1:(length(s)-1),
+      if (s(i) > s(i - 1)) && (s(i) > s(i + 1))
+        cand = [cand; i];
+      end
     end
   end
-end
-[_, j] = sort(-s(cand));
-cand = cand(j);
-return;
+  [_, j] = sort(-s(cand));
+  cand = cand(j);
+  return;
 
 function win = window(bs)
-win = cos(pi * [0:(bs-1)]/bs - pi/2);
-return
+  win = cos(pi * [0:(bs-1)]/bs - pi/2);
+  return
 
 function A = attenuate_freq(A, actual_freq, chosen_freq)
   A_pre = A;
@@ -175,18 +168,18 @@ function A = attenuate_freq(A, actual_freq, chosen_freq)
   return
 
 function basis=make_basis(basis, native_wavelength, low_freq, high_freq, win, bs)
-actual_freq = 1.0 ./ native_wavelength;
-I = find((actual_freq >= low_freq) & (actual_freq <= high_freq));
-raw = basis(I, :);
+  actual_freq = 1.0 ./ native_wavelength;
+  I = find((actual_freq >= low_freq) & (actual_freq <= high_freq));
+  raw = basis(I, :);
 
-basis = fftshift(fft(raw * diag(win), bs, 2), 2);
-for i=1:size(basis, 1),
-  basis(i, :) = basis(i, :) / norm(basis(i, :));
-end
-basis_a = abs(basis);
-basis=struct('raw', raw, ...
-             'basis', basis, ...
-             'basis_a', basis_a, ...
-             'actual_freq', actual_freq,
-             'freq_index', I);
-return
+  basis = fftshift(fft(raw * diag(win), bs, 2), 2);
+  for i=1:size(basis, 1),
+    basis(i, :) = basis(i, :) / norm(basis(i, :));
+  end
+  basis_a = abs(basis);
+  basis=struct('raw', raw, ...
+               'basis', basis, ...
+               'basis_a', basis_a, ...
+               'actual_freq', actual_freq,
+               'freq_index', I);
+  return
