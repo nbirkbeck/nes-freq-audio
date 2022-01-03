@@ -31,6 +31,10 @@ Requirements:
 * A 44.1khz .wav file to sample from (use FFmpeg to generate a wav file if you don't have one)
 * A NES emulator to play your ROMs
 
+Some video examples:
+* [Californication](https://studio.youtube.com/video/8VSbv4xZQH0)
+* [Elephant Gun](https://www.youtube.com/watch?v=IWSk03ZonaQ)
+* [Hey Jude](https://www.youtube.com/watch?v=Q7vPBbWsyzs)
 
 ## Running the analysis
 
@@ -67,6 +71,6 @@ allowed in the other wave types (triangle or wave).
 
 There are a few examples (.c, and .rom) in [rom](rom) directory:
 
-* radiohead_tri1_4096: Good example of noise used as percussion.
-* californication_tri0_4096: Giving square waves higher priority.
-* hey_jude_tri0_2048: Using a smaller block size.
+* [radiohead_tri1_4096.rom](rom/radiohead_tri1_4096.rom): Good example of noise used as percussion.
+* [californication_tri0_4096.rom](rom/californication_tri0_4096.rom): Giving square waves higher priority.
+* [hey_jude_tri0_2048.rom](rom/hey_jude_tri0_2048.rom): Using a smaller block size.
