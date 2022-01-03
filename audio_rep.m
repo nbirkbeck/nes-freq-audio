@@ -163,15 +163,6 @@ function A = attenuate_freq(A, actual_freq, chosen_freq, sigma)
     A = A.*(1.0 - exp(-(dist.^2) / (2*sigma*sigma)));
   end
   return
-  clf;
-  plot(actual_freq, abs(A_pre), 'r*'); hold on;
-  plot(actual_freq, abs(A), 'b');
-  for c=1:length(chosen_freq),
-    plot([chosen_freq(c), chosen_freq(c)], [0, 1.5*max(abs(A))], 'k');
-  end
-  hold off;
-  sleep(3);
-  return
 
 function basis=make_basis(basis, native_wavelength, low_freq, high_freq, win, bs)
   actual_freq = 1.0 ./ native_wavelength;
