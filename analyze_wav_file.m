@@ -1,4 +1,4 @@
-function run_video(input_video, output_prefix)
+function analyze_wav_file(input_video, output_prefix)
  signal = wavread(input_video);
  for bs=[2048,4096],
    [blocks, out, sc, ns, sel_4096, vol] = audio_rep(signal(1:(bs)*(1024 + 2), 1), bs, 1.5);

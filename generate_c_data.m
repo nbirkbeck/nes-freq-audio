@@ -1,4 +1,4 @@
-function [f]=save_wave(output_filename, sel, vol, ns, bs, len)
+function [f]=generate_c_data(output_filename, sel, vol, ns, bs, len)
 if nargin < 6
   len = 800;
 end

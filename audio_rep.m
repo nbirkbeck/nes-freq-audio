@@ -1,9 +1,12 @@
-function [blocks, output, score, noise, selected, volume]=audio_rep(signal, bs, noise_strength)
+function [blocks, output, score, noise, selected, volume]=audio_rep(signal, bs, noise_strength, other_args)
 if nargin < 2,
   bs = 2048;
 end
 if nargin < 3
   noise_strength = 1;
+end
+if nargin < 4,
+  other_args = struct('low_freq', 20, 'high_freq', 2000);
 end
 output = zeros(size(signal));
 overlap = 0;
@@ -15,29 +18,14 @@ else
   win = ones(1, bs);
 end
 
-low_freq = 20;
-high_freq = 4000;
-
-%% Old, testing using synthetic curves.
-if 0,
-  base_freq = 44100;
-
-  frame_duration = bs / base_freq;
-  native_freq = 1:bs;
-  actual_freq = native_freq / frame_duration;
-  I = find((actual_freq >= low_freq) & (actual_freq <= high_freq));
-  native_freq = native_freq(I);
-  actual_freq = actual_freq(I);
-  
-  basis1 = mod(native_freq' * 2 * ([1:bs] - 0.5)/bs, 2) - 1;
-  basis2 = 2 * (sin(pi + 2 * pi * (native_freq' * ([1:bs] - 1)/bs)) > 0) - 1;
-end
+low_freq = other_args.low_freq;
+high_freq = other_args.high_freq;
 
 mult = 1790000 / 44100;
 
 basis1 =  repmat([0:(bs-1)] * mult, [2048, 1]) ./ repmat([1:2048]', [1, bs]);
 basis1 = (mod(basis1 - 16, 32) - 2 * mod(basis1, 32) .* mod(floor((basis1 - 16) / 16), 2) - 8);
-basis1 = basis1 / 8;
+basis1 = basis1 / 8;  % Scale from [-1, 1]
 
 basis1 = make_basis(basis1, 32 / 1790000 * [1:2048]', low_freq, high_freq, win, bs);
 
@@ -52,6 +40,17 @@ basis2 = make_basis(basis2, repmat(16 / 1790000 * [1:2048]', [4, 1]), low_freq, 
 
 bases = {basis1, basis2};
 num_keep = [1, 2];
+permute = [1, 2, 3];
+vol_scale = [1.2, 1];
+
+bases = {basis2, basis1};
+num_keep = [2, 1];
+permute = [3, 1, 2];
+vol_scale = [1, 1.414];
+
+%bases = {basis2, basis1};
+%num_keep = [4, 2];
+
 if 0,
   plot([1:bs]/bs, basis1(100, :), 'r'); hold on;
   plot([1:bs]/bs + 0.05, basis2(100, :) + 0.05, 'b'); hold on;
@@ -78,21 +77,26 @@ for chan=1:size(signal, 2)
     block_out = blocks(:, bi) * 0;
 
     num_selected = 1;
+    chosen_freq = [];
     for basis_i=1:length(bases),
+%      chosen_freq = [];
       A = bases{basis_i}.basis_a * abs(blocks(:, bi));
       peaks = find_peaks(abs(A));
       basis = bases{basis_i}.basis;
       if length(peaks) > 0,
-        A_p = abs(basis(peaks(1:min(num_keep(basis_i), length(peaks))), :) * blocks(:, bi));
         for pi=1:min(num_keep(basis_i), length(peaks)),
-          p = peaks(pi);
-          selected(num_selected, bi, chan) = bases{basis_i}.freq_index(p); %actual_freq(1 + mod(p - 1, length(native_freq)));
-          volume(num_selected, bi, chan) = A_p(pi);
-          %if p <= length(native_freq),
-          %  selected(pi, bi, chan) = -selected(pi, bi, chan);
-          %end
-          block_out += (basis(p, :) * A_p(pi))';
-          num_selected += 1;
+          A = attenuate_freq(A, bases{basis_i}.actual_freq(bases{basis_i}.freq_index), chosen_freq);
+          peaks = find_peaks(abs(A));
+          if length(peaks),
+            A_p = abs(basis(peaks(1), :) * blocks(:, bi));
+            p = peaks(1);
+            selected(num_selected, bi, chan) = bases{basis_i}.freq_index(p);
+            volume(num_selected, bi, chan) = A_p * vol_scale(basis_i);
+            block_out += (basis(p, :) * A_p)';
+            num_selected += 1;
+
+            chosen_freq = [chosen_freq; bases{basis_i}.actual_freq(bases{basis_i}.freq_index(p))];
+          end
         end
 
         if basis_i == 1,
@@ -126,18 +130,9 @@ for chan=1:size(signal, 2)
   end
 end
 
+selected = selected(permute, :, :);
+volume = volume(permute, :, :);
 return
-num = bs * (num_blocks / 2 - 4);
-best = 1e10;
-best_val = 0;
-for k=(-(bs-1)):(bs-1),
-  mn = mean(abs(signal(bs:num, :)  - output([bs:num] + k, :)));
-  if mn < best,
-    best = mn;
-    best_val = k;
-  end
-end
-best_val
 
 function cand=find_peaks(s)
 x = [-10:10]';
@@ -161,6 +156,23 @@ return;
 function win = window(bs)
 win = cos(pi * [0:(bs-1)]/bs - pi/2);
 return
+
+function A = attenuate_freq(A, actual_freq, chosen_freq)
+  A_pre = A;
+  for c=1:length(chosen_freq),
+    dist = (actual_freq - chosen_freq(c)) ./ chosen_freq(c);
+    A = A.*(1.0 - exp(-(dist.^2) / (2*0.035*0.035)));
+  end
+  return
+  clf;
+  plot(actual_freq, abs(A_pre), 'r*'); hold on;
+  plot(actual_freq, abs(A), 'b');
+  for c=1:length(chosen_freq),
+    plot([chosen_freq(c), chosen_freq(c)], [0, 1.5*max(abs(A))], 'k');
+  end
+  hold off;
+  sleep(3);
+  return
 
 function basis=make_basis(basis, native_wavelength, low_freq, high_freq, win, bs)
 actual_freq = 1.0 ./ native_wavelength;
