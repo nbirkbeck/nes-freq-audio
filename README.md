@@ -21,7 +21,17 @@ block sizes of 1024, 2048, 4096 samples), and the best parameters
 
 There is a simple c-code driver ([rom/audio_main.c](rom/audio_main.c))
 that is used to feed the data to the NES APU. It has a simple
-equalizier
+equalizier.
+
+Interface:
+
+![all channels](img/all_channels.png)
+
+Restricting to square channels:
+[square 1](img/square1.png), [square 1&2](img/square12.png).
+In the interface, you can use left/right to highlight channel
+and down/up to mute/unmute.
+
 
 
 Requirements:
