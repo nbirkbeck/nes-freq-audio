@@ -28,7 +28,7 @@ Interface:
 ![all channels](img/all_channels.png)
 
 Restricting to square channels:
-[square 1](img/square1.png), [square 1&2](img/square12.png).
+[square 2](img/square2.png), [square 1&2](img/square12.png).
 In the interface, you can use left/right to highlight channel
 and down/up to mute/unmute.
 
