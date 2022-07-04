@@ -42,7 +42,7 @@ Requirements:
 * A NES emulator to play your ROMs
 
 Some video examples:
-* [Californication](https://studio.youtube.com/video/8VSbv4xZQH0)
+* [Californication](https://ww.youtube.com/watch?v=8VSbv4xZQH0)
 * [Elephant Gun](https://www.youtube.com/watch?v=IWSk03ZonaQ)
 * [Hey Jude](https://www.youtube.com/watch?v=Q7vPBbWsyzs)
 
